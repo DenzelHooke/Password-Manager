@@ -5,10 +5,11 @@ def verifyEmail(userInput):
 
 
     pattern = re.compile(r'([a-zA-Z0-9-]+@[a-zA-Z0-9-]+\.(com|org|edu))')
-    match = pattern.findall(userInput)[0]
-    match = match[0]
+    match = pattern.findall(userInput)
 
     if match:
+        match = match[0]
+        match = match[0]
         return match
     else:
         print("That's not an email address.")

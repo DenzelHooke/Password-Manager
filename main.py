@@ -1,24 +1,25 @@
 import helpfulFuncs
 import sys
-import os
+
+users = []
 
 
 class User:
     """Creates objects containing user information"""
 
     def __init__(self, category, email, username, password):
-        self.__category = category
-        self.__email = email
-        self.__username = username
-        self.__password = password
+        self.category = category
+        self.email = email
+        self.username = username
+        self.password = password
         self.__version = 1
 
     def __str__(self):
         return f"""
-Category: {self.__category}
-Email: {self.__email}
-Username: {self.__username}
-Password: {self.__password}
+Category: {self.category}
+Email: {self.email}
+Username: {self.username}
+Password: {self.password}
 """
 
 
@@ -32,90 +33,105 @@ def createUser():
     Verifies length.
     """
 
-    user_list = []
-
+    # TODO See if we can optimize this process by elim some loops
     min_char = 3
     max_char = 30
-
-    done = False
 
     category = "empty"
     username = "empty"
     email = "empty"
-    password = "empty"
 
     while True:
-        choice = helpfulFuncs.read_text("""
-    Would you like to enter in a category?
-                Y/N/quit
-    Choice: """).upper()
 
-        if choice == "Y" or choice == "YES":
-            category = helpfulFuncs.read_text("Enter in the category: ")
-            break
+        while True:
 
-        elif choice == "N" or choice == "NO":
-            break
+            done = False
+            choice = helpfulFuncs.read_text("""
+        Please enter what website or category these credentials will be used on.
+                
+                eg. Youtube
+                    Netflix
+                
+        ..type "quit" to close this program.
+                
+        Category: """)
 
-        else:
-            print("I don't understand that.")
-            continue
 
-    while True:
-        if done:
-            break
+            if choice == "QUIT" or choice == "Q":
+                sys.exit()
 
-        choice = helpfulFuncs.read_text("""
-    Would you like to enter in an email address, username or both??
-                Type "email", "username", "both"
-    Choice: """).upper()
+            elif choice == "quit" or choice == "q":
+                sys.exit()
 
-        if choice == "EMAIL":
-            email = helpfulFuncs.verifyEmail(input("Enter an email address: "))
-            if email:
-                done = True
+            if choice:
+                category = choice
                 break
-            else:
+
+            elif not choice:
                 continue
 
-        elif choice == "USER" or choice == "USERNAME":
-            username = helpfulFuncs.verifyUsername(input("Enter your username: "), min_char, max_char)
-            if not username:
-                continue
-            else:
-                done = True
+        while True:
+            if done:
                 break
-            # To Add: Quit button
 
+            choice = helpfulFuncs.read_text("""
+        Would you like to enter in an email address, username or both??
+                    Type "email", "username", "both"
+        Choice: """).upper()
 
-        elif choice == "BOTH":
-
-            while True:
-                email = helpfulFuncs.verifyEmail(
-                    input("Please enter an email address: "))
-                if not email:
-                    continue
-
-                username = helpfulFuncs.verifyUsername(
-                    input("Please enter a username: "), min_char, max_char)
-                # To Add: Quit button
-                if not username:
-                    continue
-                else:
-                    done = True
+            if choice == "EMAIL":
+                email = helpfulFuncs.verifyEmail(input("Enter an email address: "))
+                if email:
                     break
+                else:
+                    continue
 
-        else:
-            print("I don't understand that.")
-            continue
+            elif choice == "USER" or choice == "USERNAME":
+                username = helpfulFuncs.verifyUsername(input("Enter your username: "), min_char, max_char)
+                if username:
+                    break
+                else:
+                    continue
+                # To Add: Quit button
 
-    if done:
-        password = helpfulFuncs.read_text("Enter a password: ")
-        newUser = User(category=category, email=email, username=username, password=password)
-        print(f"\n{newUser}")
-        sys.exit()
+            elif choice == "BOTH":
 
-        # To Add: Quit button
+                while True:
+
+                    # TODO put both the email and user creation into their own functions
+
+                    email = helpfulFuncs.verifyEmail(
+                        input("Please enter an email address: "))
+                    if not email:
+                        continue
+
+                    username = helpfulFuncs.verifyUsername(
+                        input("Please enter a username: "), min_char, max_char)
+                    # To Add: Quit button
+                    if username:
+                        done = True
+                        break
+                    else:
+                        continue
+
+            else:
+                print("I don't understand that.")
+                continue
+
+        while True:
+            password = helpfulFuncs.read_text("Enter a password: ")
+            newUser = User(category=category, email=email, username=username, password=password)
+
+            # Add user
+            users.append(newUser)
+            print(users)
+
+            print()
+            print(f"Info for {newUser.category} ")
+            print(newUser)
+
+            done = False
+            break
 
 
 createUser()
