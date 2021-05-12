@@ -4,7 +4,7 @@ import re
 def verifyEmail(userInput):
 
 
-    pattern = re.compile(r'([a-zA-Z0-9-]+@[a-zA-Z0-9-]+\.(com|org|edu))')
+    pattern = re.compile(r'([a-zA-Z0-9-_.]+@[a-zA-Z0-9-]+\.(com|org|edu|ca))')
     match = pattern.findall(userInput)
 
     if match:
