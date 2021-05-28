@@ -123,20 +123,16 @@ def addUser(category, username, email, password):
 
 
 def displayCategories():
-    print("Here's a list of each category I currently have:")
+    print("Categories Listed Below:")
     print()
-    time.sleep(1)
     with conn:
         cursor.execute("SELECT category FROM userInfo")
         for i in cursor.fetchall():
             print(i[0])
 
+
 def displayUser():
     sleep_value = 0.3
-
-    print()
-    print("Find user mode selected.")
-    print()
     displayCategories()
 
     print()
@@ -144,59 +140,66 @@ def displayUser():
     time.sleep(1)
     print()
     search_value = search_value.strip()
-    values = selectFromDB(search_value)
+    values = findUser(search_value)
     if values:
         print(f'Retrieving values for category: "{search_value}"')
+        time.sleep(1)
         for tuple in values:
             time.sleep(sleep_value)
-            print(f"Category: {tuple[0]}")
+            print(f"UserID: {tuple[0]}")
             time.sleep(sleep_value)
-            print(f"Username: {tuple[1]}")
+            print(f"Category: {tuple[1]}")
             time.sleep(sleep_value)
-            print(f"Email: {tuple[2]}")
+            print(f"Username: {tuple[2]}")
             time.sleep(sleep_value)
-            print(f"Password: {tuple[3]}")
+            print(f"Email: {tuple[3]}")
+            time.sleep(sleep_value)
+            print(f"Password: {tuple[4]}")
             print()
     else:
-        print(f"There was no category named {search_value}")
+        print(f"There was no category found named {search_value}")
 
 
-def selectFromDB(input):
+def findUser(category):
     cursor.execute("""
-                       SELECT * FROM userInfo
+                       SELECT rowid, * FROM userInfo
                        WHERE category =:category""",
-                    {'category': input})
+                        {'category': category})
     values = cursor.fetchall()
     if values is None:
         return False
     else:
         return values
 
+def removeUser():
+    print(""" 
+    
+    *****************
+    User REMOVAL Mode
+    *****************
+    """)
+    time.sleep(2)
 
+    displayUser()
+    while True:
+        choice_id = helpfulFuncs.read_text("Please enter the UserID of the user you wish to remove: ")
+        confirm_choice = helpfulFuncs.read_text("""
+Are you sure you want to DELETE all of this user's information?
+                        Y/N
+: """).upper()
 
-
-
-
-def findUser(category):
-    search_user = category
-    search_user = search_user.strip()
-    search_user = search_user.lower()
-
-    result = None
-    for user in user_info:
-        category = user.category
-        category = category.strip()
-        category = category.lower()
-
-        if category.startswith(search_user):
-            result = user
+        if confirm_choice == 'Y':
+            cursor.execute("""
+            DELETE FROM userInfo
+            WHERE rowid = :choice""", {'choice': choice_id})
+            print("User Information Deleted.")
             break
-
-    if result != None:
-        return result
-    else:
-        return None
-
+        elif confirm_choice == 'N':
+            print("Deletion Aborted.")
+            break
+        else:
+            print("I don't understand that.")
+            continue
 
 def editMode():
     print()
@@ -204,10 +207,10 @@ def editMode():
     print()
     while True:
         choice = helpfulFuncs.read_int_ranged("""
-Would you like to display all user information or search for a certain user if you already know the category?
+Would you like to display all user categories or search for a certain user if you already know the category?
 
 1. Display all existing user categories.
-2. Display a certain user.
+2. Search by category.
 3. Quit edit mode.
 
 choice: """, 1, 3)
@@ -215,7 +218,7 @@ choice: """, 1, 3)
         if choice == 1:
             displayCategories()
         elif choice == 2:
-            search_user = findUser(helpfulFuncs.read_text("Please enter the category name: "))
+            search_user = findUser(helpfulFuncs.read_text_no_ws("Please enter the category name: "))
             if search_user:
                 print()
                 print(f"Current user information for {search_user.category}: ")
@@ -273,7 +276,8 @@ def menu_screen():
     1. Save a password
     2. Find User
     3. Edit User info
-    4. Quit Program
+    4. Remove User
+    5. Quit Program
 
     Please select an option: """
 
@@ -283,17 +287,16 @@ def menu_screen():
         if choice == 1:
             createUser()
         elif choice == 2:
+            print()
+            print("Find user mode selected.")
+            print()
             displayUser()
         elif choice == 3:
             editMode()
         elif choice == 4:
-            sys.exit()
+            removeUser()
         elif choice == 5:
-            with conn:
-                cursor.execute("""
-                SELECT * FROM userInfo WHERE rowid = 1
-                """)
-            print(cursor.fetchall())
+            sys.exit()
 
 
 def spinUpDB():
@@ -307,12 +310,10 @@ def spinUpDB():
 
 
 if __name__ == "__main__":
-    conn = sqlite3.connect(':memory:')
+    conn = sqlite3.connect('userinfo.db')
     cursor = conn.cursor()
     spinUpDB()
     # Add test Data
-    addUser('Youtube', 'denzelhooke', 'denzelhooke@hotmail.com', '2y8893yfgh8943t')
-    addUser('Netflix', 'denzelhooke', 'denzelhooke@hotmail.com', '2y8893yfgh8943t')
-    addUser('Youtube', 'OxiSeam', 'oxiseam@gmail.com', '2y8893yfgh8943t')
+
 
     menu_screen()
