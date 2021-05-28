@@ -1,9 +1,8 @@
 import pydoc
 import re
 
+
 def verifyEmail(userInput):
-
-
     pattern = re.compile(r'([a-zA-Z0-9-_.]+@[a-zA-Z0-9-]+\.(com|org|edu|ca))')
     match = pattern.findall(userInput)
 
@@ -16,8 +15,6 @@ def verifyEmail(userInput):
         return False
 
 
-
-
 def verifyUsername(userInput, min_char, max_char):
     """
     Counts the number of characters and returns the result.
@@ -28,30 +25,32 @@ def verifyUsername(userInput, min_char, max_char):
 
     if min_char > max_char:
         raise Exception("Min value is greater than Max value.")
-
-    str(userInput)
     count = 0
 
     try:
         while True:
-            for character in userInput:
-                count += 1
-
-            if count > max_char:
-                print()
-                print(f"Username must be less than {max_char} characters.")
-                return False
-            elif count < min_char:
-                print()
-                print(f"Username must be at least {min_char} characters.")
+            whitespace_check = white_space_checker(userInput)
+            if whitespace_check:
                 return False
             else:
-                return userInput
+                for character in userInput:
+                    count += 1
+
+                if count > max_char:
+                    print()
+                    print(f"Username must be less than {max_char} characters.")
+                    return False
+                elif count < min_char:
+                    print()
+                    print(f"Username must be at least {min_char} characters.")
+                    return False
+                else:
+                    return userInput
     except KeyboardInterrupt:
         print("Please don't try to force quit the program")
 
-def verifyWebsite(website):
 
+def verifyWebsite(website):
     pattern = re.compile(r'(https://|www\.){1}(\w+)(\.\w+)')
     matchTuple = pattern.findall(website)
 
@@ -79,6 +78,41 @@ def read_text(prompt):
             print("Please don't try to force quit the program.")
 
     return result
+
+
+def read_text_no_ws(prompt):
+    """"
+    Returns a string containing input from the user
+    Ignores Keyboard interrupts
+    Returns False if string contains ONLY whitespace
+    Returns False if no string was entered
+    """
+    count = 0
+
+    while True:
+        try:
+            result = input(prompt)
+            check = white_space_checker(result)
+            if check:
+                return False
+            else:
+                return result
+        except KeyboardInterrupt:
+            print("Please don't try to force quit the program.")
+
+
+def white_space_checker(input):
+    """"
+    Returns False if string contains ONLY whitespace
+    Returns False if no string was entered
+    """
+    count = 0
+    for char in input:
+        count += 1
+    if input.isspace() or count == 0:
+        return True
+    else:
+        return False
 
 
 def read_float(prompt):
@@ -181,7 +215,6 @@ def read_int_ranged(prompt, min_value, max_value):
         break
     # Return result
     return result
-
 
 
 def read_words(prompt):
