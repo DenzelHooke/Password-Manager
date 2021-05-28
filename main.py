@@ -1,30 +1,16 @@
 import helpfulFuncs
 import sys
 import pickle
+import sqlite3
 import time
 
 
-class User:
-    """Creates objects containing user information"""
-
-    def __init__(self, category, email, username, password):
-        self.category = category
-        self.email = email
-        self.username = username
-        self.password = password
-        self.__version = 1
-
-    def __str__(self):
-        return f"""
-Category: {self.category}
-Email: {self.email}
-Username: {self.username}
-Password: {self.password}
-"""
-
-
-def menuScreen():
-    """The login screen that allows user input"""
+def ws_error():
+    """
+    Throws 'error' message
+    """
+    print("Please Enter Characters")
+    time.sleep(1)
 
 
 def createUser():
@@ -42,7 +28,7 @@ def createUser():
 
     while True:
         done = False
-        choice = helpfulFuncs.read_text("""
+        choice = helpfulFuncs.read_text_no_ws("""
     Please enter what website or category these credentials will be used on.
             
             eg. Youtube
@@ -55,7 +41,7 @@ def createUser():
         if choice == "QUIT" or choice == "Q":
             sys.exit()
 
-        elif choice == "quit" or choice == "q":
+        elif choice == "quit":
             sys.exit()
 
         if choice:
@@ -63,6 +49,7 @@ def createUser():
             break
 
         elif not choice:
+            ws_error()
             continue
 
     while True:
@@ -86,6 +73,7 @@ def createUser():
             if username:
                 break
             else:
+                ws_error()
                 continue
             # To Add: Quit button
 
@@ -93,11 +81,10 @@ def createUser():
 
             while True:
 
-                # TODO put both the email and user creation into their own functions
-
                 email = helpfulFuncs.verifyEmail(
                     input("Please enter an email address: "))
                 if not email:
+                    ws_error()
                     continue
 
                 username = helpfulFuncs.verifyUsername(
@@ -107,90 +94,87 @@ def createUser():
                     done = True
                     break
                 else:
+                    ws_error()
                     continue
 
         else:
             print("I don't understand that.")
             continue
-
     while True:
-        password = helpfulFuncs.read_text("Enter a password: ")
-        newUser = User(category=category, email=email, username=username, password=password)
-
-        # Add user
-        user_info.append(newUser)
-        saveUser(file_name)
-
-        print(user_info)
-
+        password = helpfulFuncs.read_text_no_ws("Enter a password: ")
+        if password:
+            break
+        else:
+            ws_error()
+            continue
+    try:
+        addUser(category, username, email, password)
         print()
-        print(f"Info for {newUser.category} saved.")
-        print(newUser)
-
-        break
-
-
-def saveUser(file_name):
-    """
-    Saves the users to the given file name.
-    Users are stored as binary as a pickled file.
-    Exceptions will be raised if the save fails.
-    """
-
-    print("Saved user info")
-
-    with open(f'C:\\Users\\Denze\Documents\\user-info\\{file_name}', 'wb') as output_file:
-        pickle.dump(user_info, output_file)
+        print("Information Added.")
+        time.sleep(1)
+    except:
+        print("Error while attempting to save information to Database.")
 
 
-def loadUser(file_name):
-    """
-    Loads the user info from the given file name.
-    exceptions will be raised if the file fails to load.
-    """
-
-    global user_info
-
-    with open(f'C:\\Users\\Denze\Documents\\user-info\\{file_name}', 'rb') as input_file:
-        user_info = pickle.load(input_file)
+def addUser(category, username, email, password):
+    with conn:
+        cursor.execute("INSERT INTO userInfo VALUES(:category, :username, :email, :password)",
+                       {'category': category, 'username': username, 'email': email, 'password': password})
 
 
 def displayCategories():
-    print("Here's a list of each category I currently have: ")
+    print("Here's a list of each category I currently have:")
     print()
     time.sleep(1)
-    for user in user_info:
-        category = user.category
-        print(category)
-
+    with conn:
+        cursor.execute("SELECT category FROM userInfo")
+        for i in cursor.fetchall():
+            print(i[0])
 
 def displayUser():
+    sleep_value = 0.3
+
     print()
     print("Find user mode selected.")
     print()
     displayCategories()
 
     print()
-    search_name = helpfulFuncs.read_text("Enter the category name: ")
-    search_name = search_name.strip()
-    search_name = search_name.lower()
-
-    result = None
-    for user in user_info:
-        category = user.category
-        category = category.strip()
-        category = category.lower()
-
-        if category.startswith(search_name):
-            result = user
-            break
-
-    if result != None:
-        print()
-        print(f'Category "{category}" selected.')
-        print(result)
+    search_value = helpfulFuncs.read_text("Enter the category name: ")
+    time.sleep(1)
+    print()
+    search_value = search_value.strip()
+    values = selectFromDB(search_value)
+    if values:
+        print(f'Retrieving values for category: "{search_value}"')
+        for tuple in values:
+            time.sleep(sleep_value)
+            print(f"Category: {tuple[0]}")
+            time.sleep(sleep_value)
+            print(f"Username: {tuple[1]}")
+            time.sleep(sleep_value)
+            print(f"Email: {tuple[2]}")
+            time.sleep(sleep_value)
+            print(f"Password: {tuple[3]}")
+            print()
     else:
-        print("User not found.")
+        print(f"There was no category named {search_value}")
+
+
+def selectFromDB(input):
+    cursor.execute("""
+                       SELECT * FROM userInfo
+                       WHERE category =:category""",
+                    {'category': input})
+    values = cursor.fetchall()
+    if values is None:
+        return False
+    else:
+        return values
+
+
+
+
 
 
 def findUser(category):
@@ -222,7 +206,7 @@ def editMode():
         choice = helpfulFuncs.read_int_ranged("""
 Would you like to display all user information or search for a certain user if you already know the category?
 
-1. Display all user information.
+1. Display all existing user categories.
 2. Display a certain user.
 3. Quit edit mode.
 
@@ -282,33 +266,53 @@ choice: """).upper()
             break
 
 
-user_info = []
+def menu_screen():
+    prompt = f"""
+    | Password Manager |
 
-file_name = "user-info.pickle"
+    1. Save a password
+    2. Find User
+    3. Edit User info
+    4. Quit Program
 
-prompt = f"""
-| Password Manager |
+    Please select an option: """
 
-1. Save a password
-2. Find User
-3. Edit User info
-4. Quit Program
+    while True:
+        choice = helpfulFuncs.read_float_ranged(prompt, 1, 5)
 
-Please select an option: """
+        if choice == 1:
+            createUser()
+        elif choice == 2:
+            displayUser()
+        elif choice == 3:
+            editMode()
+        elif choice == 4:
+            sys.exit()
+        elif choice == 5:
+            with conn:
+                cursor.execute("""
+                SELECT * FROM userInfo WHERE rowid = 1
+                """)
+            print(cursor.fetchall())
 
-try:
-    loadUser(file_name)
-except:
-    print("File not loaded.")
 
-while True:
-    choice = helpfulFuncs.read_float_ranged(prompt, 1, 5)
+def spinUpDB():
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS userInfo(
+    category text COLLATE NOCASE,
+    username text,
+    email text,
+    password text
+    )""")
 
-    if choice == 1:
-        createUser()
-    elif choice == 2:
-        displayUser()
-    elif choice == 3:
-        editMode()
-    elif choice == 4:
-        sys.exit()
+
+if __name__ == "__main__":
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    spinUpDB()
+    # Add test Data
+    addUser('Youtube', 'denzelhooke', 'denzelhooke@hotmail.com', '2y8893yfgh8943t')
+    addUser('Netflix', 'denzelhooke', 'denzelhooke@hotmail.com', '2y8893yfgh8943t')
+    addUser('Youtube', 'OxiSeam', 'oxiseam@gmail.com', '2y8893yfgh8943t')
+
+    menu_screen()
