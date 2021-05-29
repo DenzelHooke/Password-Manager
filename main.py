@@ -1,6 +1,5 @@
 import helpfulFuncs
 import sys
-import pickle
 import sqlite3
 import time
 
@@ -18,25 +17,23 @@ def createUser():
     Creates user info and stores it as an object.
     """
 
-    # TODO See if we can optimize this process by elim some loops
     min_char = 3
     max_char = 30
 
-    category = "empty"
-    username = "empty"
-    email = "empty"
+    category = None
+    username = None
+    email = None
 
     while True:
         done = False
+        choice1 = helpfulFuncs.read_text_no_ws()
         choice = helpfulFuncs.read_text_no_ws("""
-    Please enter what website or category these credentials will be used on.
-            
-            eg. Youtube
-                Netflix
-            
-    ..type "quit" to close this program.
-            
-    Category: """)
+Please enter what website or category these credentials will be used on.
+        
+        eg. Youtube
+            Netflix
+        
+Category: """)
 
         if choice == "QUIT" or choice == "Q":
             sys.exit()
@@ -112,8 +109,9 @@ def createUser():
         print()
         print("Information Added.")
         time.sleep(1)
-    except:
-        print("Error while attempting to save information to Database.")
+    except Exception as error:
+        print("**Error while attempting to save information to Database**")
+        print(f"Reason: {error}")
 
 
 def addUser(category, username, email, password):
@@ -130,23 +128,25 @@ def displayCategories():
         for i in cursor.fetchall():
             print(i[0])
 
+
 def displayInfo(values):
     """
     Takes a tuple from a select query as input and prints out each value.
     """
     sleep_value = 0.3
-    for tuple in values:
+    for item in values:
         time.sleep(sleep_value)
-        print(f"UserID: {tuple[0]}")
+        print(f"UserID: {item[0]}")
         time.sleep(sleep_value)
-        print(f"Category: {tuple[1]}")
+        print(f"Category: {item[1]}")
         time.sleep(sleep_value)
-        print(f"Username: {tuple[2]}")
+        print(f"Username: {item[2]}")
         time.sleep(sleep_value)
-        print(f"Email: {tuple[3]}")
+        print(f"Email: {item[3]}")
         time.sleep(sleep_value)
-        print(f"Password: {tuple[4]}")
+        print(f"Password: {item[4]}")
         print()
+
 
 def displayUser():
     displayCategories()
@@ -158,38 +158,39 @@ def displayUser():
     search_value = search_value.strip()
     values = findUser(search_value)
     if values:
-        print(f'Retrieving values for category: "{search_value}"')
-        time.sleep(1)
+        print(f'Retrieving values for category {search_value}:')
+        print()
+        time.sleep(0.5)
         displayInfo(values)
     else:
         print(f"There was no category found named {search_value}")
 
 
-def findUser(category):
+def verifyRowid(rowid):
     cursor.execute("""
-                       SELECT rowid, * FROM userInfo
-                       WHERE category =:category""",
-                        {'category': category})
-    values = cursor.fetchall()
-    if values is None:
-        return False
-    else:
-        return values
+        SELECT EXISTS(SELECT rowid, * FROM userInfo
+        WHERE rowid = :rowid)""",
+                   {'rowid': rowid})
+    check_list = cursor.fetchone()
+
+    for item in check_list:
+        if item == 1:
+            return True
+        else:
+            return False
+
 
 def displayRowid(rowid):
     """
     Takes a rowid as input and prints that rows information.
-    Returns a list containing the row information as well
     """
     sleep_value = 0
-    info = []
+
     cursor.execute("""
-    SELECT rowid, * FROM userInfo
-    WHERE rowid = :rowid""",
-    {'rowid': rowid})
+        SELECT rowid, * FROM userInfo
+        WHERE rowid = :rowid""",
+                   {'rowid': rowid})
     values = cursor.fetchone()
-    for item in values:
-        info.append(item)
 
     time.sleep(sleep_value)
     print(f"Category: {values[1]}")
@@ -201,39 +202,68 @@ def displayRowid(rowid):
     print(f"Password: {values[4]}")
     print()
 
-    return info
 
+def findUser(category):
+    cursor.execute("""
+               SELECT rowid, * FROM userInfo
+               WHERE category =:category""",
+                   {'category': category})
+    values = cursor.fetchall()
+    if values is None:
+        return False
+    else:
+        return values
 
 
 def removeUser():
-    print(""" 
-    
-    *****************
-    User REMOVAL Mode
-    *****************
-    """)
-    time.sleep(2)
-
-    displayUser()
     while True:
-        choice_id = helpfulFuncs.read_text("Please enter the UserID of the user you wish to remove: ")
-        confirm_choice = helpfulFuncs.read_text("""
+        print(""" 
+        
+*****************
+User REMOVAL Mode
+*****************
+
+""")
+        time.sleep(2)
+        print("Please select an option:")
+        print()
+        print("1. Search by category")
+        print("2. Quit User Removal Mode")
+        print()
+        choice = int(helpfulFuncs.read_text_no_ws("> "))
+        if choice == 1:
+            displayUser()
+            choice_id = helpfulFuncs.read_text("Please enter the UserID of the user you wish to remove: ")
+            if verifyRowid(choice_id) is False:
+                print()
+                print("That UserID doesn't exist.")
+                print()
+                continue
+
+            confirm_choice = helpfulFuncs.read_text("""
 Are you sure you want to DELETE all of this user's information?
                         Y/N
 > """).upper()
 
-        if confirm_choice == 'Y':
-            cursor.execute("""
-            DELETE FROM userInfo
-            WHERE rowid = :choice""", {'choice': choice_id})
-            print("User Information Deleted.")
-            break
-        elif confirm_choice == 'N':
-            print("Deletion Aborted.")
+            if confirm_choice == 'Y':
+                with conn:
+                    cursor.execute("""
+                    DELETE FROM userInfo
+                    WHERE rowid = :choice""", {'choice': choice_id})
+                print("User Information Deleted.")
+                break
+            elif confirm_choice == 'N':
+                print("Deletion Aborted.")
+                break
+            else:
+                print("I don't understand that.")
+                continue
+        if choice == 2:
             break
         else:
             print("I don't understand that.")
             continue
+
 
 def editMode():
     print()
@@ -242,7 +272,7 @@ def editMode():
     while True:
         displayCategories()
         choice = helpfulFuncs.read_int_ranged("""
-Would you like to display all user categories or search for a certain user if you already know the category?
+Welcome to edit mode.
 
 1. Search by category.
 2. Quit edit mode.
@@ -259,83 +289,84 @@ choice: """, 1, 2)
                 displayInfo(found)
                 print()
                 choice_id = helpfulFuncs.read_text("Please enter the UserID of the user you wish to edit: ")
-                confirm_choice = helpfulFuncs.read_text(f"""
+                if verifyRowid(choice_id) is False:
+                    print()
+                    print("That UserID doesn't exist.")
+                    print()
+                    continue
+                else:
+                    confirm_choice = helpfulFuncs.read_text(f"""
 Are you sure you want to MODIFY all of USER {choice_id}'s information?
                         Y/N
 > """).upper()
-                if confirm_choice == "Y":
-                    print(f"Existing info for user {choice_id}: ")
-                    print()
-                    values = displayRowid(choice_id)
+                    if confirm_choice == "Y":
+                        print(f"Existing info for user {choice_id}: ")
+                        print()
+                        displayRowid(choice_id)
+                        print('Type "-SAME-" in any field to keep existing info the same.')
+                        print()
 
-                    category = values[1]
-                    username = values[2]
-                    email = values[3]
-                    password = values[4]
-                    print('Type "-SAME-" in any field to keep existing info the same.')
-                    print()
+                        # category
 
-                    # category
+                        newCategory = helpfulFuncs.read_text_no_ws("Enter a new category: ")
+                        if newCategory == "-same-" or newCategory == "-SAME-" or newCategory is False:
+                            print("Skipped.")
+                            pass
+                        else:
+                            with conn:
+                                cursor.execute("""
+                                UPDATE userInfo
+                                SET category = :category
+                                WHERE rowid = :rowid 
+                                """, {'category': newCategory, 'rowid': choice_id})
+                        print()
 
-                    newCategory = helpfulFuncs.read_text_no_ws("Enter a new category: ")
-                    if newCategory == "-same-" or newCategory == "-SAME-" or newCategory == False:
-                        print("Skipped.")
-                        pass
+                        # username
+
+                        newUsername = helpfulFuncs.read_text_no_ws("Enter a new username: ")
+                        if newUsername == "-same-" or newUsername == "-SAME-" or newUsername is False:
+                            print("Skipped.")
+                            pass
+                        else:
+                            with conn:
+                                cursor.execute("""
+                                UPDATE userInfo
+                                SET username = :username
+                                WHERE rowid = :rowid
+                                """, {'username': newUsername, 'rowid': choice_id})
+
+                        # email
+
+                        print()
+                        newEmail = helpfulFuncs.read_text_no_ws("Enter a new email: ")
+                        if newEmail == "-same-" or newEmail == "-SAME-" or newEmail is False:
+                            print("Skipped.")
+                            pass
+                        else:
+                            with conn:
+                                cursor.execute("""
+                                UPDATE userInfo
+                                SET email = :email
+                                WHERE rowid = :rowid
+                                """, {'email': newEmail, 'rowid': choice_id})
+
+                        # password
+
+                        print()
+                        newPassword = helpfulFuncs.read_text_no_ws("Enter a new password: ")
+                        if newPassword == "-same-" or newPassword == "-SAME-" or newPassword is False:
+                            print("Skipped.")
+                            pass
+                        else:
+                            with conn:
+                                cursor.execute("""
+                                UPDATE userInfo
+                                SET password = :password
+                                WHERE rowid = :rowid
+                                """, {'password': newPassword, 'rowid': choice_id})
                     else:
-                        cursor.execute("""
-                        UPDATE userInfo
-                        SET category = :category
-                        WHERE rowid = :rowid 
-                        """,
-                        {'category': newCategory,'rowid': choice_id})
-                    print()
-
-                    # username
-
-                    newUsername = helpfulFuncs.read_text_no_ws("Enter a new username: ")
-                    if newUsername == "-same-" or newUsername == "-SAME-" or newUsername == False:
-                        print("Skipped.")
-                        pass
-                    else:
-                        cursor.execute("""
-                        UPDATE userInfo
-                        SET username = :username
-                        WHERE rowid = :rowid
-                        """,
-                        {'username': newUsername, 'rowid': choice_id})
-
-                    # email
-
-                    print()
-                    newEmail= helpfulFuncs.read_text_no_ws("Enter a new email: ")
-                    if newEmail == "-same-" or newEmail == "-SAME-" or newEmail == False:
-                        print("Skipped.")
-                        pass
-                    else:
-                        cursor.execute("""
-                         UPDATE userInfo
-                         SET email = :email
-                         WHERE rowid = :rowid
-                         """,
-                        {'email': newEmail, 'rowid': choice_id})
-
-                    # password
-
-                    print()
-                    newPassword = helpfulFuncs.read_text_no_ws("Enter a new password: ")
-                    if newPassword == "-same-" or newPassword == "-SAME-" or newPassword == False:
-                        print("Skipped.")
-                        pass
-                    else:
-                        cursor.execute("""
-                         UPDATE userInfo
-                         SET password = :password
-                         WHERE rowid = :rowid
-                         """,
-                       {'password': newPassword, 'rowid': choice_id})
-                else:
-                    print("*Modify Cancelled*")
-                    break
+                        print("*Modify Cancelled*")
+                        continue
         elif choice == 2:
             break
 
@@ -381,10 +412,7 @@ def spinUpDB():
 
 
 if __name__ == "__main__":
-    conn = sqlite3.connect('userinfo.db')
+    conn = sqlite3.connect('USER_FILE.db')
     cursor = conn.cursor()
     spinUpDB()
-    # Add test Data
-
-
     menu_screen()
