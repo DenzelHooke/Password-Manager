@@ -6,7 +6,7 @@ import time
 
 def ws_error():
     """
-    Throws 'error' message
+    Throws 'error' message.
     """
     print("Please Enter Characters")
     time.sleep(1)
@@ -14,7 +14,8 @@ def ws_error():
 
 def createUser():
     """
-    Creates user info and stores it as an object.
+    Runs through the user creation process.
+    Stores user information within database with the help of the addUser function.
     """
 
     min_char = 3
@@ -23,11 +24,25 @@ def createUser():
     category = None
     username = None
     email = None
+    done = False
 
-    while True:
-        done = False
-        choice1 = helpfulFuncs.read_text_no_ws()
-        choice = helpfulFuncs.read_text_no_ws("""
+    while not done:
+        prompt = """
+
+Welcome to user creation mode. 
+
+Please select an option below: 
+
+1. Create user
+2. Go back to main menu
+
+Choice: """
+
+        choice = helpfulFuncs.read_int_ranged(prompt, 1, 2)
+        if choice == 1:
+            while True: 
+                    done = False
+                    choice = helpfulFuncs.read_text_no_ws("""
 Please enter what website or category these credentials will be used on.
         
         eg. Youtube
@@ -35,92 +50,98 @@ Please enter what website or category these credentials will be used on.
         
 Category: """)
 
-        if choice == "QUIT" or choice == "Q":
-            sys.exit()
 
-        elif choice == "quit":
-            sys.exit()
+                    if choice:
+                        category = choice
+                        break
 
-        if choice:
-            category = choice
-            break
-
-        elif not choice:
-            ws_error()
-            continue
-
-    while True:
-        if done:
-            break
-
-        choice = helpfulFuncs.read_text("""
-    Would you like to enter in an email address, username or both??
-                Type "email", "username", "both"
-    Choice: """).upper()
-
-        if choice == "EMAIL":
-            email = helpfulFuncs.verifyEmail(input("Enter an email address: "))
-            if email:
-                break
-            else:
-                continue
-
-        elif choice == "USER" or choice == "USERNAME":
-            username = helpfulFuncs.verifyUsername(input("Enter your username: "), min_char, max_char)
-            if username:
-                break
-            else:
-                ws_error()
-                continue
-            # To Add: Quit button
-
-        elif choice == "BOTH":
+                    elif not choice:
+                        ws_error()
+                        continue
 
             while True:
-
-                email = helpfulFuncs.verifyEmail(
-                    input("Please enter an email address: "))
-                if not email:
-                    ws_error()
-                    continue
-
-                username = helpfulFuncs.verifyUsername(
-                    input("Please enter a username: "), min_char, max_char)
-                # To Add: Quit button
-                if username:
-                    done = True
+                if done:
                     break
+
+                choice = helpfulFuncs.read_text("""
+Would you like to enter in an email address, username or both??
+            Type "email", "username", "both"
+Choice: """).upper()
+
+                if choice == "EMAIL":
+                    email = helpfulFuncs.verifyEmail(input("Enter an email address: "))
+                    if email:
+                        break
+                    else:
+                        continue
+
+                elif choice == "USER" or choice == "USERNAME":
+                    username = helpfulFuncs.verifyUsername(input("Enter your username: "), min_char, max_char)
+                    if username:
+                        break
+                    else:
+                        ws_error()
+                        continue
+
+
+                elif choice == "BOTH":
+
+                    while True:
+                        # Think about eliminating this while loop and bringing the user back to the sub menu if they mess up...???
+                        email = helpfulFuncs.verifyEmail(
+                            input("Please enter an email address: "))
+                        if not email:
+                            continue
+
+                        username = helpfulFuncs.verifyUsername(
+                            input("Please enter a username: "), min_char, max_char)
+                        if username:
+                            done = True
+                            break
+                        else:
+                            ws_error()
+                            continue
+
+                else:
+                    print("I don't understand that.")
+                    continue
+            while True:
+                password = helpfulFuncs.read_text_no_ws("Enter a password: ")
+                if password:
+                    break
+                    done = True
                 else:
                     ws_error()
                     continue
-
-        else:
-            print("I don't understand that.")
-            continue
-    while True:
-        password = helpfulFuncs.read_text_no_ws("Enter a password: ")
-        if password:
+            try:
+                addUser(category, username, email, password)
+                print()
+                print("Information Added.")
+                time.sleep(1)
+            except Exception as error:
+                print("**Error while attempting to save information to Database**")
+                print(f"Reason: {error}")
+                
+                
+        elif choice == 2:
             break
-        else:
-            ws_error()
-            continue
-    try:
-        addUser(category, username, email, password)
-        print()
-        print("Information Added.")
-        time.sleep(1)
-    except Exception as error:
-        print("**Error while attempting to save information to Database**")
-        print(f"Reason: {error}")
+            
 
 
 def addUser(category, username, email, password):
+    """
+    Takes user information as parameters such as:
+    category, username, email, password and inserts them into the database. 
+    """
     with conn:
         cursor.execute("INSERT INTO userInfo VALUES(:category, :username, :email, :password)",
                        {'category': category, 'username': username, 'email': email, 'password': password})
 
 
 def displayCategories():
+    """
+    Displays all categories that currently exist within the database.
+    """
     print("Categories Listed Below:")
     print()
     with conn:
@@ -131,7 +152,7 @@ def displayCategories():
 
 def displayInfo(values):
     """
-    Takes a tuple from a select query as input and prints out each value.
+    Takes a tuple from a select query as a parameter and prints out each value.
     """
     sleep_value = 0.3
     for item in values:
@@ -149,24 +170,46 @@ def displayInfo(values):
 
 
 def displayUser():
-    displayCategories()
+    """
+    Takes category name as input and passes those values off 
+    to other functions. 
+    """
 
-    print()
-    search_value = helpfulFuncs.read_text("Enter the category name: ")
-    time.sleep(1)
-    print()
-    search_value = search_value.strip()
-    values = findUser(search_value)
-    if values:
-        print(f'Retrieving values for category {search_value}:')
-        print()
-        time.sleep(0.5)
-        displayInfo(values)
-    else:
-        print(f"There was no category found named {search_value}")
+    while True: 
+        print("Find user mode selected.")
+        prompt = """
+
+1. Find user
+2. Go back to main menu
+
+Please select an option: """
+        choice = helpfulFuncs.read_int_ranged(prompt, 1, 2)
+
+        if choice == 1:
+                displayCategories()
+
+                print()
+                search_value = helpfulFuncs.read_text("Enter the category name: ")
+                time.sleep(1)
+                print()
+                search_value = search_value.strip()
+                values = findUser(search_value)
+                if values:
+                    print(f'Retrieving values for category {search_value}:')
+                    print()
+                    time.sleep(0.5)
+                    displayInfo(values)
+                else:
+                    print(f"There was no category found named {search_value}")
+                    continue
+        elif choice == 2:
+            break
 
 
 def verifyRowid(rowid):
+    """
+    Takes a rowid as a parameter and returns True if that rowid exists and False if it does not.
+    """
     cursor.execute("""
         SELECT EXISTS(SELECT rowid, * FROM userInfo
         WHERE rowid = :rowid)""",
@@ -216,6 +259,11 @@ def findUser(category):
 
 
 def removeUser():
+    """
+    Asks a user for a prompt.
+    Removes user from database based on user ID entered.
+    Loops back to main sub menu if that category doesn't exist.
+    """
     while True:
         print(""" 
         
@@ -225,47 +273,72 @@ User REMOVAL Mode
 
 """)
         time.sleep(2)
-        print("Please select an option:")
-        print()
-        print("1. Search by category")
-        print("2. Quit User Removal Mode")
-        print()
-        choice = int(helpfulFuncs.read_text_no_ws("> "))
-        if choice == 1:
-            displayUser()
-            choice_id = helpfulFuncs.read_text("Please enter the UserID of the user you wish to remove: ")
-            if verifyRowid(choice_id) is False:
-                print()
-                print("That UserID doesn't exist.")
-                print()
-                continue
+        prompt = """
 
-            confirm_choice = helpfulFuncs.read_text("""
+Please select an option
+
+1. Search by category
+2. Go back to main menu
+
+Choice: """
+        choice = helpfulFuncs.read_int_ranged(prompt, 1, 2)
+        if choice == 1:
+            displayCategories()
+            print()
+            search_value = helpfulFuncs.read_text_no_ws("Enter the category name: ")
+            if search_value != False: 
+                values = findUser(search_value)
+                if values:
+                    print(f'Retrieving values for category {search_value}:')
+                    print()
+                    time.sleep(0.5)
+                    displayInfo(values)
+
+                    choice_id = helpfulFuncs.read_text("Please enter the UserID of the user you wish to remove: ")
+                    if verifyRowid(choice_id) is False:
+                        print()
+                        print("That UserID doesn't exist.")
+                        print()
+                        time.sleep(1)
+                        continue
+
+                    else:
+                        displayRowid(choice_id)
+                    
+                    confirm_choice = helpfulFuncs.read_text("""
 Are you sure you want to DELETE all of this user's information?
                         Y/N
 > """).upper()
 
-            if confirm_choice == 'Y':
-                with conn:
-                    cursor.execute("""
-                    DELETE FROM userInfo
-                    WHERE rowid = :choice""", {'choice': choice_id})
-                print("User Information Deleted.")
-                break
-            elif confirm_choice == 'N':
-                print("Deletion Aborted.")
-                break
+                    if confirm_choice == 'Y':
+                        with conn:
+                            cursor.execute("""
+                            DELETE FROM userInfo
+                            WHERE rowid = :choice""", {'choice': choice_id})
+                        print("User Information Deleted.")
+                        break
+                    elif confirm_choice == 'N':
+                        print("Deletion Aborted.")
+                        break
+                    else:
+                        print("I don't understand that.")
+                        print("Deletion Aborted.")
+                        continue
+                else:
+                    print(f"There was no category found named {search_value}")
+                    continue
             else:
-                print("I don't understand that.")
+                ws_error()
                 continue
-        if choice == 2:
+        elif choice == 2:
             break
-        else:
-            print("I don't understand that.")
-            continue
-
 
 def editMode():
+    """
+    Allows the ability to edit user information.
+    Asks users for their new info via self-created input functions.
+    Returns False if user enters a number that doesn't exist.
+    """
     print()
     print("Edit mode selected.")
     print()
@@ -372,16 +445,19 @@ Are you sure you want to MODIFY all of USER {choice_id}'s information?
 
 
 def menu_screen():
-    prompt = f"""
-    | Password Manager |
+    """
+    Displays menu screen with a choice of numbered options.
+    """
+    prompt = """
+| Password Manager |
 
-    1. Save a password
-    2. Find User 
-    3. Edit User info
-    4. Remove User
-    5. Quit Program
+1. Save a password
+2. Find User 
+3. Edit User info
+4. Remove User
+5. Quit Program
 
-    Please select an option: """
+Please select an option: """
 
     while True:
         choice = helpfulFuncs.read_float_ranged(prompt, 1, 5)
@@ -402,6 +478,9 @@ def menu_screen():
 
 
 def spinUpDB():
+    """
+    Creates Database.
+    """
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS userInfo(
     category text COLLATE NOCASE,

@@ -8,7 +8,6 @@ def verifyEmail(userInput):
 
     if match:
         match = match[0]
-        match = match[0]
         return match
     else:
         print("That's not an email address.")
@@ -175,13 +174,14 @@ def read_float_ranged(prompt, min_value, max_value):
             print(f'Minimum Value is {min_value}')
             continue
             # Repeat the number reading
-        if result > max_value:
+        elif result > max_value:
             print()
             print('That number is too high.')
             print(f'Maximum Value is {max_value}')
             continue
             # Repeat the number reading
-        break
+        else:
+            break
     # Return result
     return result
 
@@ -206,13 +206,14 @@ def read_int_ranged(prompt, min_value, max_value):
             print(f'Minimum Value is {min_value}')
             continue
             # Repeat the number reading
-        if result > max_value:
+        elif result > max_value:
             print()
             print('That number is too high.')
             print(f'Maximum Value is {max_value}')
             continue
             # Repeat the number reading
-        break
+        else:
+            break
     # Return result
     return result
 
