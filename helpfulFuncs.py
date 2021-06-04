@@ -7,7 +7,9 @@ def verifyEmail(userInput):
     match = pattern.findall(userInput)
 
     if match:
+        # match returns a *list* with a tuple inside.
         match = match[0]
+        match = match[0] 
         return match
     else:
         print("That's not an email address.")

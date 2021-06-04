@@ -121,6 +121,7 @@ Choice: """).upper()
             except Exception as error:
                 print("**Error while attempting to save information to Database**")
                 print(f"Reason: {error}")
+                time.sleep(3)
                 
                 
         elif choice == 2:
